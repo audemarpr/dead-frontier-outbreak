@@ -12,6 +12,7 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
   const samples = new Map();
   const q = new T.Quaternion(), p = new T.Vector3(), turnQ = new T.Quaternion();
   const axis = new T.Vector3(0, 1, 0);
+  let carryBlend = 0;
   let active = null, time = 0, saved = false, turn = 0, lastYaw = actor.g.rotation.y;
 
   function tracks(clip) {
@@ -53,12 +54,14 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
       time = 0;
       return true;
     },
-    reset() { restore(); model.position.y=restHeight; active = null; time = turn = 0; lastYaw = actor.g.rotation.y; },
+    reset() { restore(); model.position.y=restHeight; active = null; time = turn = carryBlend = 0; lastYaw = actor.g.rotation.y; },
     apply(speed, dt) {
       const yaw = actor.g.rotation.y;
       const dy = Math.atan2(Math.sin(yaw-lastYaw), Math.cos(yaw-lastYaw));
       lastYaw = yaw;
       const moving = T.MathUtils.smoothstep(speed, .1, 1.4);
+      const carryTarget = active ? 0 : 1;
+      carryBlend += (carryTarget-carryBlend)*(1-Math.exp(-12*dt));
       turn = T.MathUtils.lerp(turn, T.MathUtils.clamp(dy / Math.max(dt,.001), -5, 5)*moving, 1-Math.exp(-7*dt));
       if (!active && !carry.length && Math.abs(turn)<=.002) return;
       for (const j of entries) { j.q.copy(j.bone.quaternion); j.p.copy(j.bone.position); }
@@ -67,7 +70,7 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
       // swing and let the support arm counterbalance the legs.
       for (const t of carry) {
         const weight = t.name === 'clavicle_r' ? .10 : t.name === 'upperarm_r' ? .32 : t.name === 'lowerarm_r' ? .52 : .43;
-        t.joint.bone.quaternion.slerp(t.target, weight * (.50+.50*moving));
+        t.joint.bone.quaternion.slerp(t.target, weight * (.85-.45*moving) * carryBlend);
       }
       if (Math.abs(turn)>.002) {
         for (const name of ['clavicle_l','clavicle_r','hand_l','hand_r']) {
@@ -79,7 +82,7 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
       time += dt;
       const {key, clip} = active;
       const death = key === 'death';
-      const enter = T.MathUtils.smoothstep(time, 0, key==='shoot'?.055:.14);
+      const enter = T.MathUtils.smoothstep(time, 0, Math.min(clip.duration*.25,key==='shoot'?.055:key==='reload'?.18:.14));
       const leave = death ? 1 : T.MathUtils.smoothstep(clip.duration-time,0,Math.min(.18,clip.duration*.28));
       const sampleTime = Math.min(time,clip.duration);
       for (const t of active.tracks) {
