@@ -29,5 +29,8 @@
   },
   "weapon": {
     "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/Pistol_1.glb"
+  },
+  "infected": {
+    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Casual.glb"
   }
 }
