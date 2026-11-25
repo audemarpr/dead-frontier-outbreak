@@ -1,4 +1,4 @@
-import {makePoseLayer} from './pose-layer.js?v=35';
+import {makePoseLayer} from './pose-layer.js?v=52';
 import {clone} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
 
 const looks = new Map();
@@ -128,6 +128,8 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   let phase = armed ? 0 : seedPhase, gaitActive = false, dead = false;
   let alternate = false, hideWeapon = 0, visualSpeed = 0, acceleration = 0, lastSpeed = 0;
   const chest=model.getObjectByName('spine_02');
+  const pelvis=model.getObjectByName('pelvis');
+  const rollAxis=new T.Vector3(0,0,1), rollQ=new T.Quaternion();
   const leanAxis=new T.Vector3(1,0,0), leanQ=new T.Quaternion();
   const stance = armed || isHostile ? actions.armed : actions.idle;
   const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
@@ -213,10 +215,16 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       }
       mixer.update(dt);
       layer.apply(visualSpeed,dt);
+      if(!dead && !actor.zombie && visualSpeed>.15 && !layer.isActing()){
+        const amount=T.MathUtils.smoothstep(visualSpeed,.15,1.5)*(1-.35*T.MathUtils.smoothstep(visualSpeed,2.5,4.5));
+        const sway=Math.sin(phase*Math.PI*2)*.025*amount;
+        if(pelvis)pelvis.quaternion.multiply(rollQ.setFromAxisAngle(rollAxis,sway));
+        if(chest)chest.quaternion.multiply(rollQ.setFromAxisAngle(rollAxis,-sway*.8));
+      }
       // Subtle acceleration-dependent body lean; apply only to freshly sampled gait poses.
       const change=T.MathUtils.clamp((visualSpeed-lastSpeed)/Math.max(dt,.001),-8,8);
       acceleration+=(change-acceleration)*(1-Math.exp(-8*dt));lastSpeed=visualSpeed;
-      if(!dead && chest && visualSpeed>.15){chest.quaternion.multiply(leanQ.setFromAxisAngle(leanAxis,T.MathUtils.clamp(acceleration*.006,-.035,.035)));}
+      if(!dead && chest && visualSpeed>.15 && !layer.isActing()){chest.quaternion.multiply(leanQ.setFromAxisAngle(leanAxis,T.MathUtils.clamp(acceleration*.006,-.035,.035)));}
       hideWeapon=Math.max(0,hideWeapon-dt);
       if (weaponSocket) weaponSocket.visible=hideWeapon===0;
     }
