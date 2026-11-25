@@ -122,7 +122,9 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const layer = makePoseLayer(T, model, clips, actor, armed || isHostile);
   const seedPhase = actor.phase / (Math.PI*2);
   let phase = armed ? 0 : seedPhase, gaitActive = false, dead = false;
-  let alternate = false, hideWeapon = 0, visualSpeed = 0;
+  let alternate = false, hideWeapon = 0, visualSpeed = 0, acceleration = 0, lastSpeed = 0;
+  const chest=model.getObjectByName('spine_02');
+  const leanAxis=new T.Vector3(1,0,0), leanQ=new T.Quaternion();
   const stance = armed || isHostile ? actions.armed : actions.idle;
   const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
   const walk = captured ? mixer.clipAction(clips.get('CapturedWalk')) : actions.walk;
@@ -193,7 +195,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     },
     reset() {
       layer.reset(); mixer.stopAllAction();
-      phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0; visualSpeed=0;
+      phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0; visualSpeed=0; acceleration=lastSpeed=0;
       if (weaponSocket) weaponSocket.visible=true;
     },
     tick(speed, dt) {
@@ -207,6 +209,10 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       }
       mixer.update(dt);
       layer.apply(visualSpeed,dt);
+      // Subtle acceleration-dependent body lean; apply only to freshly sampled gait poses.
+      const change=T.MathUtils.clamp((visualSpeed-lastSpeed)/Math.max(dt,.001),-8,8);
+      acceleration+=(change-acceleration)*(1-Math.exp(-8*dt));lastSpeed=visualSpeed;
+      if(!dead && chest && visualSpeed>.15){chest.quaternion.multiply(leanQ.setFromAxisAngle(leanAxis,T.MathUtils.clamp(acceleration*.006,-.035,.035)));}
       hideWeapon=Math.max(0,hideWeapon-dt);
       if (weaponSocket) weaponSocket.visible=hideWeapon===0;
     }
