@@ -126,16 +126,52 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   mixer.addEventListener('finished', event => {
     if (event.action === current && !dead) locked = false;
   });
+  // Forward reach of the left foot occurs at phases 0 and .958 in the two clips.
+  // Advance a shared step cycle by ground distance. The source foot sweeps give
+  // approximately 1.36 m per walking cycle and 4.92 m per running cycle.
+  let phase = 0, gaitActive = false;
+  const stance = actions.armed;
+  const sprint = clips.has('Sprint_Loop') ? mixer.clipAction(clips.get('Sprint_Loop')) : null;
+  const gaitActions = [stance, actions.walk, actions.run, sprint].filter(Boolean);
+  function stepGait(speed, dt) {
+    const blend = T.MathUtils.smoothstep(speed, 1.45, 3.9);
+    const moving = T.MathUtils.smoothstep(speed, .02, .48);
+    const sprintWeight = sprint ? .52 * T.MathUtils.smoothstep(speed, 3.3, 4.8) : 0;
+    const stride = 1.36 * (1 - blend) + 4.92 * (blend - sprintWeight) + 1.66 * sprintWeight;
+    phase = (phase + Math.min(speed, 5.2) * dt / stride) % 1;
+    if (!gaitActive) {
+      if (current) current.fadeOut(.12);
+      for (const action of gaitActions) action.reset().play();
+      actions.walk.paused = actions.run.paused = true;
+      if (sprint) sprint.paused = true;
+      gaitActive = true;
+      current = null;
+    }
+    actions.walk.time = phase * actions.walk.getClip().duration;
+    actions.run.time = ((phase + .958) % 1) * actions.run.getClip().duration;
+    actions.walk.setEffectiveWeight(moving * (1 - blend));
+    actions.run.setEffectiveWeight(moving * (blend - sprintWeight));
+    if (sprint) {
+      sprint.time = ((phase + .85) % 1) * sprint.getClip().duration;
+      sprint.setEffectiveWeight(moving * sprintWeight);
+    }
+    stance.setEffectiveWeight(1 - moving);
+  }
   actor.rig = {
     act(key) {
       if (dead) return;
       dead = key === 'death';
       locked = true;
+      if (gaitActive) {
+        for (const action of gaitActions) action.fadeOut(.1);
+        gaitActive = false;
+      }
       play(actions[key], true);
     },
-    reset() { mixer.stopAllAction(); current = null; dead = locked = false; },
+    reset() { mixer.stopAllAction(); current = null; gaitActive = false; phase = 0; dead = locked = false; },
     tick(speed, dt) {
-      if (!locked) {
+      if (armed && !locked) stepGait(speed, dt);
+      else if (!locked) {
         const key = actor.zombie ? (speed > .1 ? 'infectedWalk' : 'infectedIdle')
           : speed > 3.7 ? 'run' : speed > .1 ? 'walk' : armed || isHostile ? 'armed' : 'idle';
         play(actions[key]);
