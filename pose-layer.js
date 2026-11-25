@@ -45,6 +45,7 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
     start(key, clip) {
       if (!clip || active?.key === 'death') return false;
       if (key === 'hit' && active && active.key !== 'hit') return false;
+      if (key === 'hit' && active?.key === 'hit' && time < .12) return false;
       if (active?.key === 'reload' && !['death','shoot','attack'].includes(key)) return false;
       for (const j of entries) {
         j.startQ.copy(j.bone.quaternion);
@@ -73,9 +74,9 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
         t.joint.bone.quaternion.slerp(t.target, weight * (.85-.45*moving) * carryBlend);
       }
       if (Math.abs(turn)>.002) {
-        for (const name of ['clavicle_l','clavicle_r','hand_l','hand_r']) {
+        for (const name of ['spine_01','spine_02','clavicle_l','clavicle_r','hand_l','hand_r']) {
           const j=joints.get(name);
-          if (j) j.bone.quaternion.multiply(turnQ.setFromAxisAngle(axis,turn*(name.startsWith('hand')?-.016:-.009)));
+          if (j) j.bone.quaternion.multiply(turnQ.setFromAxisAngle(axis,turn*(name.startsWith('spine')?.012:name.startsWith('hand')?-.016:-.009)*(active?.key==='death'?0:1)));
         }
       }
       if (!active) return;
@@ -83,10 +84,11 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
       const {key, clip} = active;
       const death = key === 'death';
       const enter = T.MathUtils.smoothstep(time, 0, Math.min(clip.duration*.25,key==='shoot'?.055:key==='reload'?.18:.14));
-      const leave = death ? 1 : T.MathUtils.smoothstep(clip.duration-time,0,Math.min(.18,clip.duration*.28));
+      const release = key==='shoot'?.12:key==='hit'?.24:key==='scratch'||key==='attack'?.26:.22;
+      const leave = death ? 1 : T.MathUtils.smoothstep(clip.duration-time,0,Math.min(release,clip.duration*.35));
       const sampleTime = Math.min(time,clip.duration);
       for (const t of active.tracks) {
-        const mask = death || !t.lower ? 1 : 1-moving;
+        const mask = death || !t.lower ? 1 : (1-moving)*(key==='hit'?.65:1);
         if (mask<=0) continue;
         const weight = leave * mask;
         const value = t.sample.evaluate(sampleTime);
