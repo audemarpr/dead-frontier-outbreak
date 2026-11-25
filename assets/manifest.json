@@ -1,25 +1,9 @@
 {
-  "player": {
-    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Adventurer.glb",
-    "rotationY": 3.141592653589793
-  },
-  "survivor": {
-    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Casual.glb",
-    "rotationY": 3.141592653589793
-  },
-  "zombie": null,
   "tree": {
     "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/nature_pack/BirchTree_1.glb"
   },
   "deadTree": {
     "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/nature_pack/BirchTree_Dead_1.glb"
-  },
-  "guard": {
-    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Swat.glb",
-    "rotationY": 3.141592653589793
-  },
-  "punk": {
-    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Punk.glb"
   },
   "supply": {
     "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/FirstAidKit.glb"
@@ -31,10 +15,39 @@
     "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/Backpack.glb"
   },
   "weapon": {
-    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/Pistol_1.glb"
+    "url": "./assets/models/service_pistol.glb"
   },
-  "infected": {
-    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Casual.glb",
-    "rotationY": 3.141592653589793
+  "character": {
+    "url": "./assets/models/survivor.glb"
+  },
+  "coveredCar": {
+    "url": "./assets/models/covered_car.glb"
+  },
+  "shutter": {
+    "url": "./assets/models/rollershutter_window_01.glb"
+  },
+  "shrub": {
+    "url": "./assets/models/shrub_01.glb"
+  },
+  "warehouse": {
+    "url": "./assets/models/warehouse.glb"
+  },
+  "sedan": {
+    "url": "./assets/models/sedan.glb"
+  },
+  "pickup": {
+    "url": "./assets/models/pickup.glb"
+  },
+  "van": {
+    "url": "./assets/models/van.glb"
+  },
+  "utility": {
+    "url": "./assets/models/utility.glb"
+  },
+  "boarded-house": {
+    "url": "./assets/models/boarded-house.glb"
+  },
+  "crowd": {
+    "url": "./assets/models/crowd.glb"
   }
 }
