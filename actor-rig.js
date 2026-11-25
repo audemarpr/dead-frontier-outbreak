@@ -126,34 +126,38 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   mixer.addEventListener('finished', event => {
     if (event.action === current && !dead) locked = false;
   });
-  // Forward reach of the left foot occurs at phases 0 and .958 in the two clips.
-  // Advance a shared step cycle by ground distance. The source foot sweeps give
-  // approximately 1.36 m per walking cycle and 4.92 m per running cycle.
   let phase = 0, gaitActive = false;
   const stance = actions.armed;
-  const sprint = clips.has('Sprint_Loop') ? mixer.clipAction(clips.get('Sprint_Loop')) : null;
-  const gaitActions = [stance, actions.walk, actions.run, sprint].filter(Boolean);
+  const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
+  const walk = captured ? mixer.clipAction(clips.get('CapturedWalk')) : actions.walk;
+  const jog = captured ? mixer.clipAction(clips.get('CapturedJog')) : actions.run;
+  const run = captured ? mixer.clipAction(clips.get('CapturedRun')) : null;
+  const gaitActions = [stance, walk, jog, run].filter(Boolean);
   function stepGait(speed, dt) {
-    const blend = T.MathUtils.smoothstep(speed, 1.45, 3.9);
     const moving = T.MathUtils.smoothstep(speed, .02, .48);
-    const sprintWeight = sprint ? .52 * T.MathUtils.smoothstep(speed, 3.3, 4.8) : 0;
-    const stride = 1.36 * (1 - blend) + 4.92 * (blend - sprintWeight) + 1.66 * sprintWeight;
+    const jogBlend = T.MathUtils.smoothstep(speed, 1.35, 2.7);
+    const runBlend = captured ? T.MathUtils.smoothstep(speed, 2.75, 4.3) : 0;
+    // Each stride is the captured distance between successive same-foot contacts,
+    // scaled to the survivor's leg length. The fast take starts on the other foot.
+    const walkWeight = 1 - jogBlend, jogWeight = jogBlend - runBlend;
+    const stride = captured ? 1.311*walkWeight + 2.055*jogWeight + 2.695*runBlend
+                            : 1.36*walkWeight + 4.92*jogWeight;
     phase = (phase + Math.min(speed, 5.2) * dt / stride) % 1;
     if (!gaitActive) {
-      if (current) current.fadeOut(.12);
+      current?.fadeOut(.12);
       for (const action of gaitActions) action.reset().play();
-      actions.walk.paused = actions.run.paused = true;
-      if (sprint) sprint.paused = true;
+      walk.paused = jog.paused = true;
+      if (run) run.paused = true;
       gaitActive = true;
       current = null;
     }
-    actions.walk.time = phase * actions.walk.getClip().duration;
-    actions.run.time = ((phase + .958) % 1) * actions.run.getClip().duration;
-    actions.walk.setEffectiveWeight(moving * (1 - blend));
-    actions.run.setEffectiveWeight(moving * (blend - sprintWeight));
-    if (sprint) {
-      sprint.time = ((phase + .85) % 1) * sprint.getClip().duration;
-      sprint.setEffectiveWeight(moving * sprintWeight);
+    walk.time = phase * walk.getClip().duration;
+    jog.time = ((phase + (captured ? 0 : .958)) % 1) * jog.getClip().duration;
+    walk.setEffectiveWeight(moving * walkWeight);
+    jog.setEffectiveWeight(moving * jogWeight);
+    if (run) {
+      run.time = ((phase + .5056) % 1) * run.getClip().duration;
+      run.setEffectiveWeight(moving * runBlend);
     }
     stance.setEffectiveWeight(1 - moving);
   }
