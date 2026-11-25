@@ -1,9 +1,22 @@
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import {bindActor} from './actor-rig.js?v=32';
+import {bindActor} from './actor-rig.js?v=33';
 export async function createAssets(T){
  const loader=new GLTFLoader(),cache=new Map(),status={};let manifest={};try{let r=await fetch('./assets/manifest.json',{cache:'no-cache'});if(r.ok)manifest=await r.json()}catch{}
  function load(key){if(!cache.has(key)){let entry=manifest[key];status[key]=entry?.url?'loading':'not configured';cache.set(key,entry?.url?loader.loadAsync(entry.url).then(g=>{status[key]='loaded: '+g.animations.map(c=>c.name).join(', ');return {g,entry}}).catch(e=>{status[key]='load failed';console.warn('Model fallback',key,e);return null}):Promise.resolve(null))}return cache.get(key)}
- let crowdAsset;
+ let crowdAsset, unarmedGaits;
+ function relaxHands(base, captured) {
+   if (unarmedGaits) return unarmedGaits;
+   const finger = /^(index|middle|ring|thumb|pinky)_/;
+   unarmedGaits = captured.map(clip => {
+     const source = base.animations.find(c => c.name === (clip.name==='CapturedWalk'?'Walk_Loop':'Jog_Fwd_Loop'));
+     const tracks = clip.tracks.filter(t => !finger.test(t.name));
+     for (const track of source.tracks.filter(t => finger.test(t.name))) {
+       tracks.push(track.clone().scale(clip.duration/source.duration));
+     }
+     return new T.AnimationClip(clip.name,clip.duration,tracks);
+   });
+   return unarmedGaits;
+ }
  function crowdCharacter(base) {
    if (!crowdAsset) crowdAsset = load('crowd').then(low => {
      if (!low) return base;
@@ -19,11 +32,13 @@ export async function createAssets(T){
  async function attach(actor) {
    const data = await load('character');
    if (!data || actor.visual || !actor.g.visible) return;
-   let asset = data.g;
-   if (actor.color === 0x384c58) {
-     const gaits = await load('gaits');
-     if (gaits) asset = {scene: data.g.scene, animations: [...data.g.animations, ...gaits.g.animations]};
-   } else asset = await crowdCharacter(data.g);
+   const [base, gaits, extra] = await Promise.all([
+     actor.color === 0x384c58 ? data.g : crowdCharacter(data.g),
+     load(actor.zombie ? 'shamble' : 'gaits'), load('actions')
+   ]);
+   const motions = gaits?.g.animations || [];
+   const unarmed = !actor.zombie && actor.color!==0x384c58 && !actor.g.userData.ranged;
+   const asset = {scene: base.scene, animations: [...base.animations, ...(unarmed && gaits ? relaxHands(base,motions) : motions), ...(extra?.g.animations || [])]};
    if (!actor.visual && actor.g.visible) bindActor(T, actor, asset, load('weapon'), load('backpack'));
  }
  function tick(actor, speed, dt) { actor.rig?.tick(speed, dt); }

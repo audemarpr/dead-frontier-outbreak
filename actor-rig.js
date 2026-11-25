@@ -1,3 +1,4 @@
+import {makePoseLayer} from './pose-layer.js?v=33';
 import {clone} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
 
 const looks = new Map();
@@ -66,6 +67,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const mixer = new T.AnimationMixer(model);
   const clips = new Map(asset.animations.map(clip => [clip.name, clip]));
   const actions = Object.fromEntries(Object.entries(names).map(([key, name]) => [key, mixer.clipAction(clips.get(name))]));
+  let weaponSocket;
   const hand = model.getObjectByName('hand_r');
   if (hand && (armed || isHostile)) {
     // Calibrate the grip in the authored firing pose, then preserve its local bone transform.
@@ -73,7 +75,10 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     mixer.update(0);
     root.updateMatrixWorld(true);
     const socket = new T.Group();
+    weaponSocket = socket;
     socket.position.copy(hand.getWorldPosition(new T.Vector3()));
+    const knuckle = model.getObjectByName('middle_01_r');
+    if (knuckle) socket.position.lerp(knuckle.getWorldPosition(new T.Vector3()), .65);
     root.add(socket);
     hand.attach(socket);
     weapon.then(data => {
@@ -114,20 +119,11 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   for (const child of actor.g.children) child.visible = false;
   actor.g.add(root);
   actor.visual = root;
-  let current, locked = false, dead = false;
-  function play(action, once = false) {
-    if (current === action && !once) return;
-    if (current !== action) current?.fadeOut(.10);
-    current = action;
-    action.reset().setLoop(once ? T.LoopOnce : T.LoopRepeat, once ? 1 : Infinity);
-    action.clampWhenFinished = once;
-    action.fadeIn(.10).play();
-  }
-  mixer.addEventListener('finished', event => {
-    if (event.action === current && !dead) locked = false;
-  });
-  let phase = 0, gaitActive = false;
-  const stance = actions.armed;
+  const layer = makePoseLayer(T, model, clips, actor, armed || isHostile);
+  const seedPhase = actor.phase / (Math.PI*2);
+  let phase = armed ? 0 : seedPhase, gaitActive = false, dead = false;
+  let alternate = false, hideWeapon = 0;
+  const stance = armed || isHostile ? actions.armed : actions.idle;
   const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
   const walk = captured ? mixer.clipAction(clips.get('CapturedWalk')) : actions.walk;
   const jog = captured ? mixer.clipAction(clips.get('CapturedJog')) : actions.run;
@@ -144,12 +140,12 @@ export function bindActor(T, actor, asset, weapon, backpack) {
                             : 1.36*walkWeight + 4.92*jogWeight;
     phase = (phase + Math.min(speed, 5.2) * dt / stride) % 1;
     if (!gaitActive) {
-      current?.fadeOut(.12);
+
       for (const action of gaitActions) action.reset().play();
       walk.paused = jog.paused = true;
       if (run) run.paused = true;
       gaitActive = true;
-      current = null;
+      stance.time = seedPhase * stance.getClip().duration;
     }
     walk.time = phase * walk.getClip().duration;
     jog.time = ((phase + (captured ? 0 : .958)) % 1) * jog.getClip().duration;
@@ -161,26 +157,54 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     }
     stance.setEffectiveWeight(1 - moving);
   }
+  let infectedReady = false;
+  const shamble = clips.has('CapturedShamble') ? mixer.clipAction(clips.get('CapturedShamble')) : null;
+  function infectedGait(speed, dt) {
+    const idle=actions.infectedIdle, shuffle=actions.infectedWalk;
+    if (!infectedReady) {
+      idle.reset().play(); shuffle.reset().play(); shuffle.paused=true;
+      idle.time=seedPhase*idle.getClip().duration;
+      idle.timeScale=.94+seedPhase*.12;
+      if (shamble) { shamble.reset().play(); shamble.paused=true; }
+      infectedReady=true;
+    }
+    const weight=T.MathUtils.smoothstep(speed,.035,.68);
+    const chase=shamble ? T.MathUtils.smoothstep(speed,.54+seedPhase*.12,1.62) : 1;
+    phase=(phase+Math.min(2.5,speed)*dt/(.716*(1-chase)+1.22*chase))%1;
+    if (shamble) {
+      shamble.time=phase*shamble.getClip().duration;
+      shamble.setEffectiveWeight(weight*(1-chase));
+    }
+    shuffle.time=phase*shuffle.getClip().duration;
+    shuffle.setEffectiveWeight(weight*chase); idle.setEffectiveWeight(1-weight);
+  }
   actor.rig = {
     act(key) {
       if (dead) return;
-      dead = key === 'death';
-      locked = true;
-      if (gaitActive) {
-        for (const action of gaitActions) action.fadeOut(.1);
-        gaitActive = false;
-      }
-      play(actions[key], true);
+      const variations = key==='attack' || key==='scratch';
+      const choice = key==='attack' && alternate ? 'Punch_Cross' :
+        key==='scratch' && alternate ? 'Melee_Hook' : names[key] ||
+        ({hit:'Hit_Chest',loot:'PickUp_Table',consume:'Consume',interact:'Interact'})[key];
+      const clip=clips.get(choice) || clips.get(names[key]);
+      if (!layer.start(key,clip)) return;
+      if (variations) alternate=!alternate;
+      dead=key==='death';
+      hideWeapon=['consume','loot','interact','attack'].includes(key)?clip.duration:0;
     },
-    reset() { mixer.stopAllAction(); current = null; gaitActive = false; phase = 0; dead = locked = false; },
+    reset() {
+      layer.reset(); mixer.stopAllAction();
+      phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0;
+      if (weaponSocket) weaponSocket.visible=true;
+    },
     tick(speed, dt) {
-      if (armed && !locked) stepGait(speed, dt);
-      else if (!locked) {
-        const key = actor.zombie ? (speed > .1 ? 'infectedWalk' : 'infectedIdle')
-          : speed > 3.7 ? 'run' : speed > .1 ? 'walk' : armed || isHostile ? 'armed' : 'idle';
-        play(actions[key]);
+      layer.restore();
+      if (!dead) {
+        if (actor.zombie) infectedGait(speed,dt); else stepGait(speed,dt);
       }
       mixer.update(dt);
+      layer.apply(speed,dt);
+      hideWeapon=Math.max(0,hideWeapon-dt);
+      if (weaponSocket) weaponSocket.visible=hideWeapon===0;
     }
   };
   actor.rig.tick(0, .1);
