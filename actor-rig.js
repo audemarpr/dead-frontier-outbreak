@@ -23,6 +23,15 @@ function wornFabric(T) {
   return infectedCloth;
 }
 
+let survivorFabric;
+function cleanFabric(T) {
+  if(survivorFabric)return survivorFabric;
+  const c=document.createElement('canvas');c.width=c.height=128;
+  const ctx=c.getContext('2d');ctx.fillStyle='#e5e3dc';ctx.fillRect(0,0,128,128);
+  for(let i=0;i<128;i+=4){ctx.fillStyle='#0000000b';ctx.fillRect(i,0,1,128);ctx.fillRect(0,i,128,1);}
+  let seed=91;for(let i=0;i<1200;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const x=seed%128;seed=(Math.imul(seed,1664525)+1013904223)>>>0;ctx.fillStyle='#514b3b18';ctx.fillRect(x,(seed>>>8)%128,2,1);}
+  survivorFabric=new T.CanvasTexture(c);survivorFabric.colorSpace=T.SRGBColorSpace;return survivorFabric;
+}
 const names = {
   idle: 'Idle_Loop', armed: 'Pistol_Idle_Loop', walk: 'Walk_Loop', run: 'Jog_Fwd_Loop',
   shoot: 'Pistol_Shoot', reload: 'Pistol_Reload', attack: 'Punch_Jab', death: 'Death01',
@@ -60,7 +69,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
         if (actor.zombie) {material.map = wornFabric(T);material.color.multiplyScalar([.72,.85,.94,.63][variant]);material.roughness=.95;}
       }
       if (material.name === 'MI_Hair_1') {material.color.setHex(actor.zombie?0x49382e:armed?0x302a24:0x49382e);material.roughness=.85;}
-      if (!actor.zombie && material.name === 'Shirt') {material.roughness=.88;material.color.multiplyScalar(.88);}
+      if (!actor.zombie && material.name === 'Shirt') {material.roughness=.92;material.color.multiplyScalar(.88);if(!material.map)material.map=cleanFabric(T);}
       if (actor.zombie && source.name.includes('Superhero')) {material.color.setHex([0x9baf88,0xa8a18a,0x929d89,0xb0a69b][variant]);material.roughness=.9;}
       looks.set(key, material);
     }
@@ -89,7 +98,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       const box = new T.Box3().setFromObject(pistol);
       const size = box.getSize(new T.Vector3());
       if (size.x > size.z) pistol.rotation.y = -Math.PI / 2;
-      const length = Math.max(size.x, size.z, size.y);
+      const length = Math.max(size.x, size.z, size.y);if(!Number.isFinite(length)||length<=0)return;
       pistol.scale.setScalar(.23 / length);
       box.setFromObject(pistol);
       const center = box.getCenter(new T.Vector3());
@@ -112,7 +121,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
         const pack = data.g.scene.clone(true);
         const box = new T.Box3().setFromObject(pack);
         const size = box.getSize(new T.Vector3());
-        pack.scale.setScalar(.46 / size.y);
+        if(!Number.isFinite(size.y)||size.y<=0)return;pack.scale.setScalar(.46 / size.y);
         box.setFromObject(pack);
         pack.position.sub(box.getCenter(new T.Vector3()));
         pack.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
