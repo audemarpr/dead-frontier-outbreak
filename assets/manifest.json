@@ -49,5 +49,8 @@
   },
   "crowd": {
     "url": "./assets/models/crowd.glb"
+  },
+  "sprint": {
+    "url": "./assets/models/sprint.glb"
   }
 }
