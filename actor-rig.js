@@ -51,15 +51,16 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     node.castShadow = true;
     node.receiveShadow = true;
     const source = node.material;
-    const key = source.uuid + ':' + actor.color;
+    const variant=actor.zombie?Math.abs(Math.round(actor.x*7+actor.z*13))%4:0;
+    const key = source.uuid + ':' + actor.color + ':' + (actor.zombie?'infected'+variant:'survivor');
     if (!looks.has(key)) {
       const material = source.clone();
       if (material.name === 'Shirt') {
         material.color.setHex(actor.color);
-        if (actor.zombie) material.map = wornFabric(T);
+        if (actor.zombie) {material.map = wornFabric(T);material.color.multiplyScalar([.72,.85,.94,.63][variant]);material.roughness=.95;}
       }
       if (material.name === 'MI_Hair_1') material.color.setHex(0x49382e);
-      if (actor.zombie && source.name.includes('Superhero')) material.color.setHex(0x9baf88);
+      if (actor.zombie && source.name.includes('Superhero')) {material.color.setHex([0x9baf88,0xa8a18a,0x929d89,0xb0a69b][variant]);material.roughness=.9;}
       looks.set(key, material);
     }
     node.material = looks.get(key);
