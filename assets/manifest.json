@@ -11,5 +11,23 @@
   },
   "deadTree": {
     "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/nature_pack/BirchTree_Dead_1.glb"
+  },
+  "guard": {
+    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Swat.glb"
+  },
+  "punk": {
+    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/modular_men/Punk.glb"
+  },
+  "supply": {
+    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/FirstAidKit.glb"
+  },
+  "gasCan": {
+    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/GasCan.glb"
+  },
+  "backpack": {
+    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/Backpack.glb"
+  },
+  "weapon": {
+    "url": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/survival_pack/Pistol_1.glb"
   }
 }
