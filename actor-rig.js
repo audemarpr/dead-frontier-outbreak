@@ -122,7 +122,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const layer = makePoseLayer(T, model, clips, actor, armed || isHostile);
   const seedPhase = actor.phase / (Math.PI*2);
   let phase = armed ? 0 : seedPhase, gaitActive = false, dead = false;
-  let alternate = false, hideWeapon = 0;
+  let alternate = false, hideWeapon = 0, visualSpeed = 0;
   const stance = armed || isHostile ? actions.armed : actions.idle;
   const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
   const walk = captured ? mixer.clipAction(clips.get('CapturedWalk')) : actions.walk;
@@ -193,16 +193,20 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     },
     reset() {
       layer.reset(); mixer.stopAllAction();
-      phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0;
+      phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0; visualSpeed=0;
       if (weaponSocket) weaponSocket.visible=true;
     },
     tick(speed, dt) {
       layer.restore();
       if (!dead) {
-        if (actor.zombie) infectedGait(speed,dt); else stepGait(speed,dt);
+        // Smooth pose weights independently of gameplay movement; keep stride phase continuous.
+        const target = Number.isFinite(speed) ? Math.max(0,speed) : 0;
+        visualSpeed += (target-visualSpeed)*(1-Math.exp(-(target>visualSpeed?12:17)*dt));
+        if (visualSpeed<.015 && target===0) visualSpeed=0;
+        if (actor.zombie) infectedGait(visualSpeed,dt); else stepGait(visualSpeed,dt);
       }
       mixer.update(dt);
-      layer.apply(speed,dt);
+      layer.apply(visualSpeed,dt);
       hideWeapon=Math.max(0,hideWeapon-dt);
       if (weaponSocket) weaponSocket.visible=hideWeapon===0;
     }
