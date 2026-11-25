@@ -42,6 +42,7 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
   }
   return {
     restore,
+    isActing() { return active !== null; },
     start(key, clip) {
       if (!clip || active?.key === 'death') return false;
       if (key === 'hit' && active && active.key !== 'hit') return false;
@@ -64,14 +65,15 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
       const carryTarget = active ? 0 : 1;
       carryBlend += (carryTarget-carryBlend)*(1-Math.exp(-12*dt));
       turn = T.MathUtils.lerp(turn, T.MathUtils.clamp(dy / Math.max(dt,.001), -5, 5)*moving, 1-Math.exp(-7*dt));
-      if (!active && !carry.length && Math.abs(turn)<=.002) return;
+      // Always preserve the sampled pose before procedural rig offsets.
+
       for (const j of entries) { j.q.copy(j.bone.quaternion); j.p.copy(j.bone.position); }
       saved = true;
       // A carried pistol stays closer to the body. Keep the captured shoulder
       // swing and let the support arm counterbalance the legs.
       for (const t of carry) {
         const weight = t.name === 'clavicle_r' ? .10 : t.name === 'upperarm_r' ? .32 : t.name === 'lowerarm_r' ? .52 : .43;
-        t.joint.bone.quaternion.slerp(t.target, weight * (.85-.45*moving) * carryBlend);
+        t.joint.bone.quaternion.slerp(t.target, weight * (.85-.60*moving) * carryBlend);
       }
       if (Math.abs(turn)>.002) {
         for (const name of ['spine_01','spine_02','clavicle_l','clavicle_r','hand_l','hand_r']) {
