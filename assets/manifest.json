@@ -55,5 +55,11 @@
   },
   "gaits": {
     "url": "./assets/models/captured-gaits.glb"
+  },
+  "actions": {
+    "url": "./assets/models/survivor-actions.glb"
+  },
+  "shamble": {
+    "url": "./assets/models/infected-shamble.glb"
   }
 }
