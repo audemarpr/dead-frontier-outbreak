@@ -1,4 +1,4 @@
-import {makePoseLayer} from './pose-layer.js?v=33';
+import {makePoseLayer} from './pose-layer.js?v=34';
 import {clone} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
 
 const looks = new Map();
@@ -129,7 +129,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const jog = captured ? mixer.clipAction(clips.get('CapturedJog')) : actions.run;
   const run = captured ? mixer.clipAction(clips.get('CapturedRun')) : null;
   const gaitActions = [stance, walk, jog, run].filter(Boolean);
-  function stepGait(speed, dt) {
+  function stepGait(speed, dt, travelSpeed = speed) {
     const moving = T.MathUtils.smoothstep(speed, .02, .48);
     const jogBlend = T.MathUtils.smoothstep(speed, 1.35, 2.7);
     const runBlend = captured ? T.MathUtils.smoothstep(speed, 2.75, 4.3) : 0;
@@ -138,7 +138,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     const walkWeight = 1 - jogBlend, jogWeight = jogBlend - runBlend;
     const stride = captured ? 1.311*walkWeight + 2.055*jogWeight + 2.695*runBlend
                             : 1.36*walkWeight + 4.92*jogWeight;
-    phase = (phase + Math.min(speed, 5.2) * dt / stride) % 1;
+    phase = (phase + Math.min(travelSpeed, 5.2) * dt / stride) % 1;
     if (!gaitActive) {
 
       for (const action of gaitActions) action.reset().play();
@@ -159,7 +159,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   }
   let infectedReady = false;
   const shamble = clips.has('CapturedShamble') ? mixer.clipAction(clips.get('CapturedShamble')) : null;
-  function infectedGait(speed, dt) {
+  function infectedGait(speed, dt, travelSpeed = speed) {
     const idle=actions.infectedIdle, shuffle=actions.infectedWalk;
     if (!infectedReady) {
       idle.reset().play(); shuffle.reset().play(); shuffle.paused=true;
@@ -170,7 +170,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     }
     const weight=T.MathUtils.smoothstep(speed,.035,.68);
     const chase=shamble ? T.MathUtils.smoothstep(speed,.54+seedPhase*.12,1.62) : 1;
-    phase=(phase+Math.min(2.5,speed)*dt/(.716*(1-chase)+1.22*chase))%1;
+    phase=(phase+Math.min(2.5,travelSpeed)*dt/(.716*(1-chase)+1.22*chase))%1;
     if (shamble) {
       shamble.time=phase*shamble.getClip().duration;
       shamble.setEffectiveWeight(weight*(1-chase));
@@ -203,7 +203,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
         const target = Number.isFinite(speed) ? Math.max(0,speed) : 0;
         visualSpeed += (target-visualSpeed)*(1-Math.exp(-(target>visualSpeed?12:17)*dt));
         if (visualSpeed<.015 && target===0) visualSpeed=0;
-        if (actor.zombie) infectedGait(visualSpeed,dt); else stepGait(visualSpeed,dt);
+        if (actor.zombie) infectedGait(visualSpeed,dt,target); else stepGait(visualSpeed,dt,target);
       }
       mixer.update(dt);
       layer.apply(visualSpeed,dt);
