@@ -1,4 +1,4 @@
-import {makePoseLayer} from './pose-layer.js?v=34';
+import {makePoseLayer} from './pose-layer.js?v=35';
 import {clone} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
 
 const looks = new Map();
