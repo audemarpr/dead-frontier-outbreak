@@ -13,3 +13,7 @@ The shipped game uses selected models and clips from these sources. The Quaterni
 “Boarded-Up House”, “Work Pickup”, “Rugged SUV”, “Compact Crossover” and “Panel Van” by vinish.dev are used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The house is scaled for the map. The four vehicle derivatives have reduced geometry, baked vertex colors, adjusted paint and simplified materials. [Original models](https://vinish.dev/free-3d-models/)
 
 The three Quaternius Standard archives each contain a CC0 dedication. The city kit includes its CC0 license at the linked revision. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
+
+### Captured survivor movement
+
+The data used in this project was obtained from [mocap.cs.cmu.edu](https://mocap.cs.cmu.edu/). The database was created with funding from NSF EIA-0196217. Trials 02_01 (walk), 02_03 (jog) and 09_01 (run) were cropped to individual cycles, aligned to foot contacts and retargeted to the survivor skeleton. The game supplies translation. The animation retains vertical motion and lateral weight shifts. [CMU usage terms](https://mocap.cs.cmu.edu/faqs.php) · [BVH conversion mirror](https://github.com/una-dinosauria/cmu-mocap)

@@ -52,5 +52,8 @@
   },
   "sprint": {
     "url": "./assets/models/sprint.glb"
+  },
+  "gaits": {
+    "url": "./assets/models/captured-gaits.glb"
   }
 }

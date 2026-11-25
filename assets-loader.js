@@ -1,5 +1,5 @@
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import {bindActor} from './actor-rig.js?v=31';
+import {bindActor} from './actor-rig.js?v=32';
 export async function createAssets(T){
  const loader=new GLTFLoader(),cache=new Map(),status={};let manifest={};try{let r=await fetch('./assets/manifest.json',{cache:'no-cache'});if(r.ok)manifest=await r.json()}catch{}
  function load(key){if(!cache.has(key)){let entry=manifest[key];status[key]=entry?.url?'loading':'not configured';cache.set(key,entry?.url?loader.loadAsync(entry.url).then(g=>{status[key]='loaded: '+g.animations.map(c=>c.name).join(', ');return {g,entry}}).catch(e=>{status[key]='load failed';console.warn('Model fallback',key,e);return null}):Promise.resolve(null))}return cache.get(key)}
@@ -21,8 +21,8 @@ export async function createAssets(T){
    if (!data || actor.visual || !actor.g.visible) return;
    let asset = data.g;
    if (actor.color === 0x384c58) {
-     const sprint = await load('sprint');
-     if (sprint) asset = {scene: data.g.scene, animations: [...data.g.animations, ...sprint.g.animations]};
+     const gaits = await load('gaits');
+     if (gaits) asset = {scene: data.g.scene, animations: [...data.g.animations, ...gaits.g.animations]};
    } else asset = await crowdCharacter(data.g);
    if (!actor.visual && actor.g.visible) bindActor(T, actor, asset, load('weapon'), load('backpack'));
  }
