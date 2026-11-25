@@ -59,7 +59,8 @@ export function bindActor(T, actor, asset, weapon, backpack) {
         material.color.setHex(actor.color);
         if (actor.zombie) {material.map = wornFabric(T);material.color.multiplyScalar([.72,.85,.94,.63][variant]);material.roughness=.95;}
       }
-      if (material.name === 'MI_Hair_1') material.color.setHex(0x49382e);
+      if (material.name === 'MI_Hair_1') {material.color.setHex(actor.zombie?0x49382e:armed?0x302a24:0x49382e);material.roughness=.85;}
+      if (!actor.zombie && material.name === 'Shirt') {material.roughness=.88;material.color.multiplyScalar(.88);}
       if (actor.zombie && source.name.includes('Superhero')) {material.color.setHex([0x9baf88,0xa8a18a,0x929d89,0xb0a69b][variant]);material.roughness=.9;}
       looks.set(key, material);
     }
@@ -93,6 +94,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       box.setFromObject(pistol);
       const center = box.getCenter(new T.Vector3());
       pistol.position.set(-center.x, .035-center.y, .055-center.z);
+      pistol.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
       socket.add(pistol);
     });
     actions.shoot.stop();
@@ -113,6 +115,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
         pack.scale.setScalar(.46 / size.y);
         box.setFromObject(pack);
         pack.position.sub(box.getCenter(new T.Vector3()));
+        pack.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
         mount.add(pack);
       });
     }
