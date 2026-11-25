@@ -1,0 +1,9 @@
+import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import {clone} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
+export async function createAssets(T){
+ const loader=new GLTFLoader(),cache=new Map();let manifest={};try{let r=await fetch('./assets/manifest.json');if(r.ok)manifest=await r.json()}catch{}
+ function load(key){if(!cache.has(key)){let entry=manifest[key];cache.set(key,entry?.url?loader.loadAsync(entry.url).then(g=>({g,entry})).catch(e=>{console.warn('Model fallback',key,e);return null}):Promise.resolve(null))}return cache.get(key)}
+ async function attach(a){let key=a.zombie?'zombie':a.color===0x384c58?'player':'survivor';let data=await load(key);if(!data||a.visual)return;let model=clone(data.g.scene);let bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3());if(!Number.isFinite(size.y)||size.y<.001)return;let scale=1.9/size.y;model.scale.multiplyScalar(scale);bounds.setFromObject(model);let center=bounds.getCenter(new T.Vector3());model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));let root=new T.Group();root.rotation.y=data.entry.rotationY||0;root.add(model);let old=[...a.g.children];a.g.add(root);for(let child of old)child.visible=false;a.visual=root;a.mixer=new T.AnimationMixer(model);let clips=data.g.animations;function pick(name,regex){return clips.find(c=>c.name===data.entry[name])||clips.find(c=>regex.test(c.name))}let idle=pick('idle',/idle|stand/i),walk=pick('walk',/walk|shuffle|run/i);a.idle=idle?a.mixer.clipAction(idle):null;a.walk=walk?a.mixer.clipAction(walk):null;a.current=a.idle||a.walk;a.current?.play()}
+ function tick(a,moving,dt){let next=(moving?a.walk:a.idle)||a.current;if(next&&next!==a.current){a.current?.fadeOut(.2);next.reset().fadeIn(.2).play();a.current=next}a.mixer?.update(dt)}
+ return {attach,tick}
+}
