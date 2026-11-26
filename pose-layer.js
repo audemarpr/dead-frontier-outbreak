@@ -85,8 +85,8 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
       time += dt;
       const {key, clip} = active;
       const death = key === 'death';
-      const enter = T.MathUtils.smoothstep(time, 0, Math.min(clip.duration*.25,key==='shoot'?.055:key==='reload'?.18:.14));
-      const release = key==='shoot'?.12:key==='hit'?.24:key==='scratch'||key==='attack'?.26:.22;
+      const enter = T.MathUtils.smoothstep(time, 0, Math.min(clip.duration*.25,key==='shoot'?.075:key==='reload'?.20:.14));
+      const release = key==='shoot'?.18:key==='hit'?.24:key==='scratch'||key==='attack'?.30:key==='reload'?.32:.22;
       const leave = death ? 1 : T.MathUtils.smoothstep(clip.duration-time,0,Math.min(release,clip.duration*.35));
       const sampleTime = Math.min(time,clip.duration);
       for (const t of active.tracks) {
