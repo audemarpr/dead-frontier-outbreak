@@ -73,7 +73,7 @@ export function makePoseLayer(T, model, clips, actor, equipped) {
       // swing and let the support arm counterbalance the legs.
       for (const t of carry) {
         const weight = t.name === 'clavicle_r' ? .10 : t.name === 'upperarm_r' ? .32 : t.name === 'lowerarm_r' ? .52 : .43;
-        t.joint.bone.quaternion.slerp(t.target, weight * (.85-.60*moving) * carryBlend);
+        t.joint.bone.quaternion.slerp(t.target, weight * (.65-.50*moving) * carryBlend);
       }
       if (Math.abs(turn)>.002) {
         for (const name of ['spine_01','spine_02','clavicle_l','clavicle_r','hand_l','hand_r']) {
