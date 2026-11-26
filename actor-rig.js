@@ -78,7 +78,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const mixer = new T.AnimationMixer(model);
   const clips = new Map(asset.animations.map(clip => [clip.name, clip]));
   const actions = Object.fromEntries(Object.entries(names).map(([key, name]) => [key, mixer.clipAction(clips.get(name))]));
-  let weaponSocket;
+  let weaponSocket, muzzleFlash, flashTime=0;
   const hand = model.getObjectByName('hand_r');
   if (hand && (armed || isHostile)) {
     // Calibrate the grip in the authored firing pose, then preserve its local bone transform.
@@ -105,6 +105,9 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       pistol.position.set(-center.x, .035-center.y, .055-center.z);
       pistol.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
       socket.add(pistol);
+      pistol.updateMatrixWorld(true);
+      const flash=new T.Mesh(new T.SphereGeometry(.045,6,4),new T.MeshBasicMaterial({color:0xffd28a,transparent:true,opacity:.9,depthWrite:false}));
+      flash.position.set(0,.035,.17);flash.scale.set(.65,.65,1.8);flash.visible=false;socket.add(flash);muzzleFlash=flash;
     });
     actions.shoot.stop();
   }
@@ -210,12 +213,14 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       const clip=clips.get(choice) || clips.get(names[key]);
       if (!layer.start(key,clip)) return;
       if (variations) alternate=!alternate;
+      if(key==='shoot'){flashTime=.065;if(muzzleFlash)muzzleFlash.visible=true;}else if(key==='death'){flashTime=0;if(muzzleFlash)muzzleFlash.visible=false;}
       dead=key==='death';
       hideWeapon=['consume','loot','interact','attack'].includes(key)?clip.duration:0;
     },
     reset() {
       layer.reset(); mixer.stopAllAction();
       phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0; visualSpeed=0; acceleration=lastSpeed=0;idleMotion=0;
+      flashTime=0;if(muzzleFlash)muzzleFlash.visible=false;
       if (weaponSocket) weaponSocket.visible=true;
     },
     tick(speed, dt) {
@@ -250,6 +255,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       const change=T.MathUtils.clamp((visualSpeed-lastSpeed)/Math.max(dt,.001),-8,8);
       acceleration+=(change-acceleration)*(1-Math.exp(-8*dt));lastSpeed=visualSpeed;
       if(!dead && chest && visualSpeed>.15 && !layer.isActing()){chest.quaternion.multiply(leanQ.setFromAxisAngle(leanAxis,T.MathUtils.clamp(acceleration*.006,-.035,.035)));}
+      flashTime=Math.max(0,flashTime-dt);if(muzzleFlash)muzzleFlash.visible=flashTime>0&&!dead;
       hideWeapon=Math.max(0,hideWeapon-dt);
       if (weaponSocket) weaponSocket.visible=hideWeapon===0;
     }
