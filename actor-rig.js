@@ -141,6 +141,9 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const rollAxis=new T.Vector3(0,0,1), rollQ=new T.Quaternion();
   const twistAxis=new T.Vector3(0,1,0), twistQ=new T.Quaternion();
   const upperSpine=model.getObjectByName('spine_03');
+  const head=model.getObjectByName('Head');
+  const infectedBias=Math.sin(actor.phase*3.7);
+  let idleMotion=0;
   const leanAxis=new T.Vector3(1,0,0), leanQ=new T.Quaternion();
   const stance = armed || isHostile ? actions.armed : actions.idle;
   const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
@@ -212,7 +215,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     },
     reset() {
       layer.reset(); mixer.stopAllAction();
-      phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0; visualSpeed=0; acceleration=lastSpeed=0;
+      phase=armed?0:seedPhase; gaitActive=infectedReady=dead=false; hideWeapon=0; visualSpeed=0; acceleration=lastSpeed=0;idleMotion=0;
       if (weaponSocket) weaponSocket.visible=true;
     },
     tick(speed, dt) {
@@ -226,6 +229,13 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       }
       mixer.update(dt);
       layer.apply(visualSpeed,dt);
+      if(!dead && actor.zombie && !layer.isActing()){
+        idleMotion+=dt;
+        const movement=T.MathUtils.smoothstep(visualSpeed,.05,1.4);
+        const wobble=Math.sin(phase*Math.PI*2+actor.phase)*.035*movement;
+        if(chest)chest.quaternion.multiply(rollQ.setFromAxisAngle(rollAxis,infectedBias*.025+wobble));
+        if(head){head.quaternion.multiply(rollQ.setFromAxisAngle(rollAxis,infectedBias*.045+Math.sin(idleMotion*1.3+actor.phase)*.025));head.quaternion.multiply(twistQ.setFromAxisAngle(twistAxis,Math.sin(idleMotion*.8+actor.phase)*.035*(1-movement)));}
+      }
       if(!dead && !actor.zombie && visualSpeed>.15 && !layer.isActing()){
         const amount=T.MathUtils.smoothstep(visualSpeed,.15,1.5)*(1-.35*T.MathUtils.smoothstep(visualSpeed,2.5,4.5));
         const cycle=phase*Math.PI*2;
