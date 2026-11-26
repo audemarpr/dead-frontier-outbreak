@@ -139,6 +139,8 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const chest=model.getObjectByName('spine_02');
   const pelvis=model.getObjectByName('pelvis');
   const rollAxis=new T.Vector3(0,0,1), rollQ=new T.Quaternion();
+  const twistAxis=new T.Vector3(0,1,0), twistQ=new T.Quaternion();
+  const upperSpine=model.getObjectByName('spine_03');
   const leanAxis=new T.Vector3(1,0,0), leanQ=new T.Quaternion();
   const stance = armed || isHostile ? actions.armed : actions.idle;
   const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
@@ -148,8 +150,8 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const gaitActions = [stance, walk, jog, run].filter(Boolean);
   function stepGait(speed, dt, travelSpeed = speed) {
     const moving = T.MathUtils.smoothstep(speed, .02, .48);
-    const jogBlend = T.MathUtils.smoothstep(speed, 1.35, 2.7);
-    const runBlend = captured ? T.MathUtils.smoothstep(speed, 2.75, 4.3) : 0;
+    const jogBlend = T.MathUtils.smoothstep(speed, 1.55, 2.85);
+    const runBlend = captured ? T.MathUtils.smoothstep(speed, 2.85, 4.3) : 0;
     // Each stride is the captured distance between successive same-foot contacts,
     // scaled to the survivor's leg length. The fast take starts on the other foot.
     const walkWeight = 1 - jogBlend, jogWeight = jogBlend - runBlend;
@@ -226,7 +228,11 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       layer.apply(visualSpeed,dt);
       if(!dead && !actor.zombie && visualSpeed>.15 && !layer.isActing()){
         const amount=T.MathUtils.smoothstep(visualSpeed,.15,1.5)*(1-.35*T.MathUtils.smoothstep(visualSpeed,2.5,4.5));
-        const sway=Math.sin(phase*Math.PI*2)*.025*amount;
+        const cycle=phase*Math.PI*2;
+        const sway=Math.sin(cycle)*.025*amount;
+        const twist=Math.cos(cycle)*.035*amount;
+        if(pelvis)pelvis.quaternion.multiply(twistQ.setFromAxisAngle(twistAxis,twist));
+        if(upperSpine)upperSpine.quaternion.multiply(twistQ.setFromAxisAngle(twistAxis,-twist*.85));
         if(pelvis)pelvis.quaternion.multiply(rollQ.setFromAxisAngle(rollAxis,sway));
         if(chest)chest.quaternion.multiply(rollQ.setFromAxisAngle(rollAxis,-sway*.8));
       }
