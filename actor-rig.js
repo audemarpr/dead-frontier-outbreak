@@ -261,4 +261,15 @@ export function bindActor(T, actor, asset, weapon, backpack) {
     }
   };
   actor.rig.tick(0, .1);
+  // Calibrate the actual posed skinned geometry once, excluding equipment.
+  root.updateMatrixWorld(true);
+  const groundBounds=new T.Box3(),vertex=new T.Vector3();
+  model.traverse(node=>{
+    if(!node.isSkinnedMesh||!node.visible)return;
+    node.skeleton.update();
+    const count=node.geometry.attributes.position.count;
+    for(let i=0;i<count;i++){node.getVertexPosition(i,vertex);node.localToWorld(vertex);root.worldToLocal(vertex);groundBounds.expandByPoint(vertex);}
+  });
+  if(Number.isFinite(groundBounds.min.y))root.position.y=-T.MathUtils.clamp(groundBounds.min.y,-.35,.35);
+
 }
