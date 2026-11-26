@@ -71,6 +71,14 @@ export function bindActor(T, actor, asset, weapon, backpack) {
       if (material.name === 'MI_Hair_1') {material.color.setHex(actor.zombie?0x49382e:armed?0x302a24:0x49382e);material.roughness=.85;}
       if (!actor.zombie && material.name === 'Shirt') {material.roughness=.92;material.color.multiplyScalar(.88);if(!material.map)material.map=cleanFabric(T);}
       if (actor.zombie && source.name.includes('Superhero')) {material.color.setHex([0x9baf88,0xa8a18a,0x929d89,0xb0a69b][variant]);material.roughness=.9;}
+      // Preserve authored textures while reducing the plastic appearance of clothing and skin.
+      const materialName=material.name.toLowerCase();
+      if(/shirt|pants|trouser|jean|cloth|shoe|boot/.test(materialName)){
+        material.metalness=0;material.roughness=.94;
+        if(!material.map)material.map=actor.zombie?wornFabric(T):cleanFabric(T);
+      }
+      if(/skin|superhero/.test(materialName)){material.metalness=0;material.roughness=.82;}
+      if(/hair/.test(materialName)){material.metalness=0;material.roughness=.92;}
       looks.set(key, material);
     }
     node.material = looks.get(key);
