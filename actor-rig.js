@@ -1,4 +1,4 @@
-import {makePoseLayer} from './pose-layer.js?v=52';
+import {makePoseLayer} from './pose-layer.js?v=82';
 import {clone} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/SkeletonUtils.js';
 
 const looks = new Map();
@@ -148,7 +148,7 @@ export function bindActor(T, actor, asset, weapon, backpack) {
   const infectedBias=Math.sin(actor.phase*3.7);
   let idleMotion=0;
   const leanAxis=new T.Vector3(1,0,0), leanQ=new T.Quaternion();
-  const stance = armed || isHostile ? actions.armed : actions.idle;
+  const stance = isHostile ? actions.armed : actions.idle;
   const captured = clips.has('CapturedWalk') && clips.has('CapturedJog') && clips.has('CapturedRun');
   const walk = captured ? mixer.clipAction(clips.get('CapturedWalk')) : actions.walk;
   const jog = captured ? mixer.clipAction(clips.get('CapturedJog')) : actions.run;
